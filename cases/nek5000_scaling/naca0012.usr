@@ -1,0 +1,118 @@
+c-----------------------------------------------------------------------
+c     naca0012.usr - Nek5000 user routines for scaling runs
+c
+c     This is the minimal version used for strong-scaling and weak-scaling
+c     timing measurements. Force logging is intentionally not enabled
+c     because the scaling runs only need accurate wall-clock-per-step
+c     measurements, not aerodynamic coefficients. For validation use the
+c     extended userchk in cases/nek5000_validation/naca0012.usr.
+c-----------------------------------------------------------------------
+      subroutine userchk()
+      include 'SIZE'
+      include 'TOTAL'
+c     No per-step work required for scaling measurements.
+c     Nek5000 emits its own timing diagnostics to stdout/run.log,
+c     which is the timing source consumed by the post-processing
+c     notebooks in postproc/.
+      return
+      end
+
+c-----------------------------------------------------------------------
+      subroutine userf(ix, iy, iz, eg)
+      include 'SIZE'
+      include 'NEKUSE'
+      ffx = 0.0
+      ffy = 0.0
+      ffz = 0.0
+      return
+      end
+
+c-----------------------------------------------------------------------
+      subroutine userq(ix, iy, iz, eg)
+      include 'SIZE'
+      include 'NEKUSE'
+      qvol = 0.0
+      return
+      end
+
+c-----------------------------------------------------------------------
+      subroutine userbc(ix, iy, iz, iside, eg)
+      include 'SIZE'
+      include 'NEKUSE'
+      ux = 1.0
+      uy = 0.0
+      uz = 0.0
+      temp = 0.0
+      return
+      end
+
+c-----------------------------------------------------------------------
+      subroutine useric(ix, iy, iz, eg)
+      include 'SIZE'
+      include 'NEKUSE'
+      ux = 1.0
+      uy = 0.0
+      uz = 0.0
+      temp = 0.0
+      return
+      end
+
+c-----------------------------------------------------------------------
+      subroutine usrdat()
+c     Strip curve data and shift boundary identifiers down by one
+      include 'SIZE'
+      include 'TOTAL'
+      integer e, f
+
+      do e = 1, nelt
+        do f = 1, 12
+          ccurve(f, e) = ' '
+          curve(1, f, e) = 0.0
+          curve(2, f, e) = 0.0
+          curve(3, f, e) = 0.0
+          curve(4, f, e) = 0.0
+          curve(5, f, e) = 0.0
+        enddo
+      enddo
+
+      do e = 1, nelt
+        do f = 1, 2*ndim
+          if (boundaryID(f, e) .gt. 0) then
+            boundaryID(f, e) = boundaryID(f, e) - 1
+          endif
+        enddo
+      enddo
+
+      return
+      end
+
+c-----------------------------------------------------------------------
+      subroutine usrdat2()
+c     Map shifted boundaryID values onto Nek5000 character codes
+      include 'SIZE'
+      include 'TOTAL'
+      integer e, f
+
+      do e = 1, nelt
+        do f = 1, 2*ndim
+          if (boundaryID(f, e) .eq. 1) then
+            cbc(f, e, 1) = 'W  '
+          elseif (boundaryID(f, e) .eq. 2) then
+            cbc(f, e, 1) = 'v  '
+          elseif (boundaryID(f, e) .eq. 3) then
+            cbc(f, e, 1) = 'O  '
+          elseif (boundaryID(f, e) .eq. 4) then
+            cbc(f, e, 1) = 'SYM'
+          endif
+        enddo
+      enddo
+
+      return
+      end
+
+c-----------------------------------------------------------------------
+      subroutine usrdat3()
+      include 'SIZE'
+      include 'TOTAL'
+      return
+      end

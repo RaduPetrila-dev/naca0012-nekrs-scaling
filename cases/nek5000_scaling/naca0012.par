@@ -1,0 +1,23 @@
+[GENERAL]
+numSteps         = 500
+dt               = 5e-4
+writeInterval    = 500
+variableDT       = no
+targetCFL        = 2.0
+timeStepper      = BDF2
+extrapolation    = OIFS
+
+[PROBLEMTYPE]
+equation         = incompressible
+
+[PRESSURE]
+residualTol      = 1e-6
+residualProj     = yes
+
+[VELOCITY]
+residualTol      = 1e-8
+density          = 1.0
+viscosity        = -1000
+
+[TEMPERATURE]
+solver           = none
