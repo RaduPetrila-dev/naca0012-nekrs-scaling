@@ -1,0 +1,24 @@
+[GENERAL]
+numSteps                  = 100000
+dt                        = 5e-4
+polynomialOrder           = 7
+timeStepper               = tombo2
+advectionSubCyclingSteps  = 2
+checkpointControl         = steps
+checkpointInterval        = 4000
+
+[FLUID PRESSURE]
+residualTol               = 1e-6
+
+[FLUID VELOCITY]
+residualTol               = 1e-8
+rho                       = 1.0
+viscosity                 = -1000
+
+[BOOMERAMG]
+coarsenType               = 8
+interpolationType         = 6
+smootherType              = 16
+iterations                = 1
+strongThreshold           = 0.25
+nonGalerkinTol            = 0.1
