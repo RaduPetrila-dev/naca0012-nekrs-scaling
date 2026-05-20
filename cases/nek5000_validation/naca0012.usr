@@ -1,0 +1,203 @@
+c-----------------------------------------------------------------------
+c     naca0012.usr - Nek5000 user-defined routines
+c
+c     This file is the CORRECTED version of the validation user routine
+c     described in Appendix C of the dissertation. It replaces the
+c     character cbc-array check used in the original validation re-run
+c     with a direct test of the integer boundaryID array, which is
+c     populated at mesh-read time rather than by usrdat2. This avoids
+c     the startup-sequence ordering issue that caused the original
+c     force-logging output to remain zero throughout the run
+c     (see Section 5.2 and Appendix B of the dissertation).
+c
+c     Boundary identifier convention after the shift applied in usrdat:
+c         1  -> aerofoil surface (no-slip wall, W)
+c         2  -> inlet (Dirichlet velocity, v)
+c         3  -> outlet (natural outflow, O)
+c         4  -> spanwise periodic faces (handled by mesh topology)
+c-----------------------------------------------------------------------
+      subroutine userchk()
+      include 'SIZE'
+      include 'TOTAL'
+
+      real x0(3)
+      data x0 /3*0.0/
+      save x0
+
+      real scale
+      save scale
+
+      integer icalld
+      save icalld
+      data icalld /0/
+
+      integer e, f, member
+
+      if (icalld .eq. 0) then
+        icalld = 1
+
+c       Build object 1 from every face with wall boundaryID (= 1 after
+c       the down-shift applied in usrdat). The integer boundaryID array
+c       is populated at mesh-read time, unlike the character cbc array
+c       which on this build is not available until after usrdat2.
+        nobj            = 1
+        iobj            = 1
+        nmember(iobj)   = 0
+
+        do e = 1, nelt
+          do f = 1, 2*ndim
+            if (boundaryID(f,e) .eq. 1) then
+              hcode(10, iobj) = 'I'
+              hcode( 1, iobj) = 'F'
+              hcode( 2, iobj) = 'F'
+              hcode( 3, iobj) = 'F'
+              nmember(iobj)   = nmember(iobj) + 1
+              member          = nmember(iobj)
+              object(iobj, member, 1) = e
+              object(iobj, member, 2) = f
+            endif
+          enddo
+        enddo
+
+c       Non-dimensionalisation:
+c         rho_inf = 1, U_inf = 1, c = 1, L_z = 0.2
+c         dynamic pressure x reference area = 0.5 * 1 * 1^2 * (1 * 0.2)
+        scale = 1.0 / (0.5 * 1.0 * 1.0 * 1.0 * 0.2)
+
+        if (nid .eq. 0) then
+          open(unit=66, file='forces.dat', status='replace')
+          write(66,'(A)')
+     $     '# step    time         Cd            Cl            '//
+     $     'Cd_pres       Cd_visc       Cl_pres       Cl_visc'
+        endif
+      endif
+
+      call torque_calc(scale, x0, .false., .false.)
+
+      if (nid .eq. 0) then
+        write(66,'(I8,1X,7(E14.7,1X))')
+     $    istep, time,
+     $    dragx(0), dragy(0),
+     $    dragpx(0), dragvx(0),
+     $    dragpy(0), dragvy(0)
+        if (mod(istep, 100) .eq. 0) flush(66)
+      endif
+
+      return
+      end
+
+c-----------------------------------------------------------------------
+      subroutine userf(ix, iy, iz, eg)
+c     Forcing function (zero for this case)
+      include 'SIZE'
+      include 'NEKUSE'
+      ffx = 0.0
+      ffy = 0.0
+      ffz = 0.0
+      return
+      end
+
+c-----------------------------------------------------------------------
+      subroutine userq(ix, iy, iz, eg)
+c     Heat source (not used, scalar solver disabled)
+      include 'SIZE'
+      include 'NEKUSE'
+      qvol = 0.0
+      return
+      end
+
+c-----------------------------------------------------------------------
+      subroutine userbc(ix, iy, iz, iside, eg)
+c     Dirichlet boundary conditions at inlet (uniform free-stream)
+      include 'SIZE'
+      include 'NEKUSE'
+      ux = 1.0
+      uy = 0.0
+      uz = 0.0
+      temp = 0.0
+      return
+      end
+
+c-----------------------------------------------------------------------
+      subroutine useric(ix, iy, iz, eg)
+c     Initial conditions: uniform free-stream throughout domain
+      include 'SIZE'
+      include 'NEKUSE'
+      ux = 1.0
+      uy = 0.0
+      uz = 0.0
+      temp = 0.0
+      return
+      end
+
+c-----------------------------------------------------------------------
+      subroutine usrdat()
+c     Called once at start-up. Strips curve data from every element
+c     (the curve projection from gmsh2nek produces negative Jacobians
+c     near the trailing edge - see Chapter 3 of the dissertation) and
+c     shifts the Gmsh-generated boundary identifiers down by one so
+c     that the wall has identifier 1.
+      include 'SIZE'
+      include 'TOTAL'
+
+      integer e, f
+
+c     Strip curve data: set every element to straight-sided
+      do e = 1, nelt
+        do f = 1, 12
+          ccurve(f, e) = ' '
+          curve(1, f, e) = 0.0
+          curve(2, f, e) = 0.0
+          curve(3, f, e) = 0.0
+          curve(4, f, e) = 0.0
+          curve(5, f, e) = 0.0
+        enddo
+      enddo
+
+c     Shift boundary identifiers down by one
+c     (Gmsh-generated meshes from this pipeline start at id = 2)
+      do e = 1, nelt
+        do f = 1, 2*ndim
+          if (boundaryID(f, e) .gt. 0) then
+            boundaryID(f, e) = boundaryID(f, e) - 1
+          endif
+        enddo
+      enddo
+
+      return
+      end
+
+c-----------------------------------------------------------------------
+      subroutine usrdat2()
+c     Called once after mesh setup. Maps the shifted integer
+c     boundaryID values onto the Nek5000 character boundary codes
+c     (W = wall, v = velocity Dirichlet, O = outflow, SYM = symmetry).
+      include 'SIZE'
+      include 'TOTAL'
+
+      integer e, f
+
+      do e = 1, nelt
+        do f = 1, 2*ndim
+          if (boundaryID(f, e) .eq. 1) then
+            cbc(f, e, 1) = 'W  '
+          elseif (boundaryID(f, e) .eq. 2) then
+            cbc(f, e, 1) = 'v  '
+          elseif (boundaryID(f, e) .eq. 3) then
+            cbc(f, e, 1) = 'O  '
+          elseif (boundaryID(f, e) .eq. 4) then
+            cbc(f, e, 1) = 'SYM'
+          endif
+        enddo
+      enddo
+
+      return
+      end
+
+c-----------------------------------------------------------------------
+      subroutine usrdat3()
+c     Called once after usrdat2. No additional setup required here.
+      include 'SIZE'
+      include 'TOTAL'
+      return
+      end
