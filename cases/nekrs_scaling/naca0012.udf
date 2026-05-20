@@ -1,0 +1,48 @@
+// naca0012.udf - NekRS user-defined functions
+//
+// Minimal user file for the NACA 0012 scaling and production runs.
+// Sets uniform free-stream initial condition and defines the velocity
+// Dirichlet boundary at the inlet. Boundary identifier convention
+// matches the Nek5000 case after the down-shift applied in usrdat:
+//   1 = wall, 2 = inlet, 3 = outflow, 4 = spanwise SYM
+//
+// For the production LES (numSteps = 100,000) this file is identical;
+// only the .par file changes (see cases/nekrs_production/).
+
+#include "udf.hpp"
+
+static occa::kernel exactUVWPKernel;
+
+// ------------------------------------------------------------
+// UDF_LoadKernels: called once at start-up
+// ------------------------------------------------------------
+void UDF_LoadKernels(occa::properties& kernelInfo)
+{
+  // No user kernels for this case
+}
+
+// ------------------------------------------------------------
+// UDF_Setup: initial condition
+// ------------------------------------------------------------
+void UDF_Setup(nrs_t *nrs)
+{
+  mesh_t *mesh = nrs->meshV;
+
+  // Uniform free-stream: u = (1, 0, 0)
+  for (int n = 0; n < mesh->Np * mesh->Nelements; ++n) {
+    nrs->U[n + 0 * nrs->fieldOffset] = 1.0;  // u
+    nrs->U[n + 1 * nrs->fieldOffset] = 0.0;  // v
+    nrs->U[n + 2 * nrs->fieldOffset] = 0.0;  // w
+    nrs->P[n]                        = 0.0;  // p
+  }
+}
+
+// ------------------------------------------------------------
+// UDF_ExecuteStep: called at the end of every time step
+// ------------------------------------------------------------
+void UDF_ExecuteStep(nrs_t *nrs, double time, int tstep)
+{
+  // No per-step user work required for scaling runs.
+  // Step timing is captured by NekRS's internal instrumentation
+  // and logged to stdout / run.log.
+}

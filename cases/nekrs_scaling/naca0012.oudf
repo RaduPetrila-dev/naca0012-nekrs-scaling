@@ -1,0 +1,16 @@
+// naca0012.oudf - NekRS device-side boundary functions
+//
+// Inflow Dirichlet boundary on the inlet (bID = 2):
+//   u_inlet = (1, 0, 0)
+
+void velocityDirichletConditions(bcData *bc)
+{
+  bc->u = 1.0;
+  bc->v = 0.0;
+  bc->w = 0.0;
+}
+
+void pressureDirichletConditions(bcData *bc)
+{
+  bc->p = 0.0;
+}
