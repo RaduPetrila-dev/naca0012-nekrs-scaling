@@ -1,0 +1,41 @@
+cff-version: 1.2.0
+title: "High-Fidelity Simulations of Wall-Bounded Flows Over a 3D Aerofoil Using GPU and CPU Architectures"
+message: >-
+  If you use this software or methodology, please cite the
+  underlying dissertation using the metadata below.
+type: software
+authors:
+  - given-names: Radu
+    family-names: Petrila
+    affiliation: "University of Manchester"
+abstract: >-
+  Reproducibility repository for a BEng Aerospace Engineering
+  dissertation comparing GPU-accelerated NekRS against CPU-based
+  Nek5000 on the NACA 0012 aerofoil at Re=1000. Provides solver
+  configuration, SLURM submission scripts, build environment,
+  and post-processing references for the strong-scaling,
+  weak-scaling, throughput, and production-LES results reported
+  in the dissertation.
+keywords:
+  - spectral element method
+  - Nek5000
+  - NekRS
+  - GPU acceleration
+  - computational fluid dynamics
+  - NACA 0012
+  - bandwidth-bound performance
+  - energy-aware computing
+license: MIT
+version: "1.0.0"
+date-released: 2026-05-15
+references:
+  - type: thesis
+    title: "High-Fidelity Simulations of Wall-Bounded Flows Over a 3D Aerofoil Using GPU and CPU Architectures"
+    authors:
+      - given-names: Radu
+        family-names: Petrila
+    thesis-type: BEng
+    institution:
+      name: University of Manchester
+      department: Department of Mechanical and Aerospace Engineering
+    year: 2026
